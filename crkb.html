@@ -39,31 +39,7 @@
                 <div class="overflow-x-auto shadow-inner rounded-lg border border-slate-200">
                     <table class="w-full text-left border-collapse min-w-[2000px]" id="dataTable">
                         <thead>
-                            <tr class="bg-slate-800 text-white text-xs uppercase tracking-wider">
-                                <th class="p-3 sticky left-0 bg-slate-800">Patient ID</th>
-                                <th class="p-3">Age @ Diag</th>
-                                <th class="p-3">Sex/Gender</th>
-                                <th class="p-3">Ancestry</th>
-                                <th class="p-3">Primary Cancer</th>
-                                <th class="p-3">ICD-O-3</th>
-                                <th class="p-3">Stage/Grade</th>
-                                <th class="p-3">Gene Symbol</th>
-                                <th class="p-3">Variant (HGVS)</th>
-                                <th class="p-3">Pathogenicity</th>
-                                <th class="p-3">Treatment Log</th>
-                                <th class="p-3">HPO Mapping</th>
-                                <th class="p-3">Env. Exposure</th>
-                                <th class="p-3">Family History</th>
-                                <th class="p-3">XXXXXXXX XXXXX</th>
-                                <th class="p-3">XXXXXXXX XXXXX</th>
-                                <th class="p-3">XXXXXXXX XXXXX</th>
-                                <th class="p-3">XXXXXXXX XXXXX</th>
-                                <th class="p-3">XXXXXXXX XXXXX</th>
-                                <th class="p-3">XXXXXXXX XXXXX</th>
-                                <th class="p-3">XXXXXXXX XXXXX</th>
-                                <th class="p-3">XXXXXXXX XXXXX</th>
-                                
-                            </tr>
+                          <tr class="bg-slate-800 text-white text-xs uppercase tracking-wider"></tr>
                         </thead>
                         <tbody id="tableBody" class="text-sm"></tbody>
                     </table>
@@ -72,85 +48,109 @@
         </div>
     </div>
 
-    <script>
-        const knowledgeDatabase = {
-            headers: ["Patient ID", "Age @ Diag", "Sex/Gender", "Ancestry", "Primary Cancer", "ICD-O-3", "Stage/Grade", "Gene Symbol", "Variant (HGVS)", "Pathogenicity", "Treatment Log", "HPO Mapping", "Env. Exposure", "Family History"],
-            rows: [
-                { "Patient ID": "CR-001", "Age @ Diag": "34", "Sex/Gender": "F", "Ancestry": "EUR", "Primary Cancer": "Breast", "ICD-O-3": "C50.9", "Stage/Grade": "II/G2", "Gene Symbol": "BRCA1", "Variant (HGVS)": "c.123A>G", "Pathogenicity": "VUS", "Treatment Log": "Chemo/Surg", "HPO Mapping": "HP:0003002", "Env. Exposure": "Low", "Family History": "Pos" },
-                { "Patient ID": "CR-002", "Age @ Diag": "28", "Sex/Gender": "M", "Ancestry": "SAS", "Primary Cancer": "Colon", "ICD-O-3": "C18.0", "Stage/Grade": "III/G3", "Gene Symbol": "TP53", "Variant (HGVS)": "c.456T>C", "Pathogenicity": "VUS", "Treatment Log": "Surg", "HPO Mapping": "HP:0002488", "Env. Exposure": "High", "Family History": "Neg" }
-            ]
-        };
-
-        // Login Logic
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
-
-            if (user === 'guest' && pass === 'guest') {
-                document.getElementById('loginPage').classList.add('hidden');
-                document.getElementById('dataPage').classList.remove('hidden');
-                renderTable();
-            } else {
-                document.getElementById('errorMsg').classList.remove('hidden');
-            }
-        });
-
-        // Table Rendering
-        function renderTable(filter = "") {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = "";
-            const filtered = knowledgeDatabase.rows.filter(row => 
-                Object.values(row).some(val => val.toString().toLowerCase().includes(filter.toLowerCase()))
-            );
-
-            filtered.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-100 hover:bg-slate-50";
-                tr.innerHTML = `
-                    <td class="p-3 font-bold sticky left-0 bg-white border-r">${row["Patient ID"]}</td>
-                    <td class="p-3">${row["Age @ Diag"]}</td>
-                    <td class="p-3">${row["Sex/Gender"]}</td>
-                    <td class="p-3">${row["Ancestry"]}</td>
-                    <td class="p-3">${row["Primary Cancer"]}</td>
-                    <td class="p-3">${row["ICD-O-3"]}</td>
-                    <td class="p-3">${row["Stage/Grade"]}</td>
-                    <td class="p-3 font-semibold text-blue-700">${row["Gene Symbol"]}</td>
-                    <td class="p-3 font-mono">${row["Variant (HGVS)"]}</td>
-                    <td class="p-3">${row["Pathogenicity"]}</td>
-                    <td class="p-3">${row["Treatment Log"]}</td>
-                    <td class="p-3">${row["HPO Mapping"]}</td>
-                    <td class="p-3">${row["Env. Exposure"]}</td>
-                    <td class="p-3">${row["Family History"]}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        document.getElementById('searchInput').addEventListener('input', (e) => renderTable(e.target.value));
-        
-        function exportCSV() {
-            let csv = knowledgeDatabase.headers.join(",") + "\n";
-            knowledgeDatabase.rows.forEach(row => {
-                csv += Object.values(row).join(",") + "\n";
-            });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'CanRISE_Knowledge_Matrix.csv');
-            a.click();
-        }
-    </script>
-
 <script>
-  document.addEventListener('contextmenu', e => e.preventDefault());
+  let knowledgeDatabase = { headers: [], rows: [] };
 
-  document.addEventListener('auxclick', e => {
+  function cleanValue(value) {
+    if (value === null || value === undefined) return "";
+    return String(value).trim();
+  }
+
+  function getHeaders(rows) {
+    return rows.length ? Object.keys(rows[0]) : [];
+  }
+
+  function renderHeaders() {
+    const theadRow = document.querySelector("#dataTable thead tr");
+    theadRow.innerHTML = knowledgeDatabase.headers.map((header, i) => {
+      const sticky = i === 0 ? " sticky left-0 bg-slate-800" : "";
+      return `<th class="p-3${sticky}">${header}</th>`;
+    }).join("");
+  }
+
+  function renderTable(filter = "") {
+    const tbody = document.getElementById("tableBody");
+    tbody.innerHTML = "";
+
+    const q = filter.toLowerCase();
+    const filtered = knowledgeDatabase.rows.filter(row =>
+      Object.values(row).some(v => cleanValue(v).toLowerCase().includes(q))
+    );
+
+    filtered.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.className = "border-b border-slate-100 hover:bg-slate-50";
+
+      tr.innerHTML = knowledgeDatabase.headers.map((header, i) => {
+        const value = cleanValue(row[header]);
+        const sticky = i === 0 ? " sticky left-0 bg-white border-r font-bold" : "";
+        return `<td class="p-3${sticky}">${value}</td>`;
+      }).join("");
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function exportCSV() {
+    const esc = v => `"${cleanValue(v).replace(/"/g, '""')}"`;
+    let csv = knowledgeDatabase.headers.map(esc).join(",") + "\n";
+
+    knowledgeDatabase.rows.forEach(row => {
+      csv += knowledgeDatabase.headers.map(h => esc(row[h])).join(",") + "\n";
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "CanRISE_Knowledge_Matrix.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function loadData() {
+    const res = await fetch("turex2.json", { cache: "no-store" });
+    if (!res.ok) throw new Error(`Failed to load turex2.json: ${res.status}`);
+    const data = await res.json();
+
+    knowledgeDatabase.rows = Array.isArray(data) ? data : [];
+    knowledgeDatabase.headers = getHeaders(knowledgeDatabase.rows);
+
+    renderHeaders();
+    renderTable();
+  }
+
+  document.getElementById("loginForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+
+    if (user === "guest" && pass === "guest") {
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("dataPage").classList.remove("hidden");
+      renderTable(document.getElementById("searchInput").value);
+    } else {
+      document.getElementById("errorMsg").classList.remove("hidden");
+    }
+  });
+
+  document.getElementById("searchInput").addEventListener("input", e => {
+    renderTable(e.target.value);
+  });
+
+  document.addEventListener("contextmenu", e => e.preventDefault());
+  document.addEventListener("auxclick", e => {
     if (e.button === 1) e.preventDefault();
   });
-</script>
 
+  window.addEventListener("DOMContentLoaded", () => {
+    loadData().catch(err => {
+      console.error(err);
+      document.getElementById("tableBody").innerHTML =
+        `<tr><td class="p-4 text-red-600" colspan="50">Failed to load turex2.json</td></tr>`;
+    });
+  });
+</script>
 
 </body>
 </html>
