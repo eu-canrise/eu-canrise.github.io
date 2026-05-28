@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CanRISE | Knowledge Hub Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-white min-h-screen">
+
+    <!-- Login Container -->
+    <div id="loginPage" class="flex flex-col items-center justify-center min-h-screen p-6">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <img src="logo.png" alt="CanRISE Logo" class="w-32 h-32 mx-auto mb-6 rounded-full border-2 border-blue-500/50">
+            <h2 class="text-2xl font-bold mb-6">CanRISE Knowledge Hub Login</h2>
+            <form id="loginForm" class="space-y-4">
+                <input type="text" id="username" placeholder="Username" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="password" id="password" placeholder="Password" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition">Access Database</button>
+            </form>
+            <p id="errorMsg" class="text-red-400 mt-4 hidden text-sm">Invalid credentials.</p>
+        </div>
+    </div>
+
+    <!-- Data Matrix Container (Initially Hidden) -->
+    <div id="dataPage" class="hidden bg-slate-50 text-slate-900 p-4 md:p-8 min-h-screen">
+        <div class="max-w-[95vw] mx-auto">
+            <header class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-900">CanRISE Knowledgebase (KB)</h1>
+                <p class="text-slate-600 mt-2">Comprehensive Consortium Internal Repository</p>
+            </header>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-col md:flex-row justify-between gap-4 mb-6">
+                    <input type="text" id="searchInput" placeholder="Search across all CanRISE KB data..." class="border border-slate-300 rounded-lg px-4 py-2 w-full md:w-1/3 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <button onclick="exportCSV()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Export Full Matrix (CSV)</button>
+                </div>
+
+                <div class="overflow-x-auto shadow-inner rounded-lg border border-slate-200">
+                    <table class="w-full text-left border-collapse min-w-[2000px]" id="dataTable">
+                        <thead>
+                            <tr class="bg-slate-800 text-white text-xs uppercase tracking-wider">
+                                <th class="p-3 sticky left-0 bg-slate-800">Patient ID</th>
+                                <th class="p-3">Age @ Diag</th>
+                                <th class="p-3">Sex/Gender</th>
+                                <th class="p-3">Ancestry</th>
+                                <th class="p-3">Primary Cancer</th>
+                                <th class="p-3">ICD-O-3</th>
+                                <th class="p-3">Stage/Grade</th>
+                                <th class="p-3">Gene Symbol</th>
+                                <th class="p-3">Variant (HGVS)</th>
+                                <th class="p-3">Pathogenicity</th>
+                                <th class="p-3">Treatment Log</th>
+                                <th class="p-3">HPO Mapping</th>
+                                <th class="p-3">Env. Exposure</th>
+                                <th class="p-3">Family History</th>
+                                <th class="p-3">XXXXXXXX XXXXX</th>
+                                <th class="p-3">XXXXXXXX XXXXX</th>
+                                <th class="p-3">XXXXXXXX XXXXX</th>
+                                <th class="p-3">XXXXXXXX XXXXX</th>
+                                <th class="p-3">XXXXXXXX XXXXX</th>
+                                <th class="p-3">XXXXXXXX XXXXX</th>
+                                <th class="p-3">XXXXXXXX XXXXX</th>
+                                <th class="p-3">XXXXXXXX XXXXX</th>
+                                
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const knowledgeDatabase = {
+            headers: ["Patient ID", "Age @ Diag", "Sex/Gender", "Ancestry", "Primary Cancer", "ICD-O-3", "Stage/Grade", "Gene Symbol", "Variant (HGVS)", "Pathogenicity", "Treatment Log", "HPO Mapping", "Env. Exposure", "Family History"],
+            rows: [
+                { "Patient ID": "CR-001", "Age @ Diag": "34", "Sex/Gender": "F", "Ancestry": "EUR", "Primary Cancer": "Breast", "ICD-O-3": "C50.9", "Stage/Grade": "II/G2", "Gene Symbol": "BRCA1", "Variant (HGVS)": "c.123A>G", "Pathogenicity": "VUS", "Treatment Log": "Chemo/Surg", "HPO Mapping": "HP:0003002", "Env. Exposure": "Low", "Family History": "Pos" },
+                { "Patient ID": "CR-002", "Age @ Diag": "28", "Sex/Gender": "M", "Ancestry": "SAS", "Primary Cancer": "Colon", "ICD-O-3": "C18.0", "Stage/Grade": "III/G3", "Gene Symbol": "TP53", "Variant (HGVS)": "c.456T>C", "Pathogenicity": "VUS", "Treatment Log": "Surg", "HPO Mapping": "HP:0002488", "Env. Exposure": "High", "Family History": "Neg" }
+            ]
+        };
+
+        // Login Logic
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            if (user === 'guest' && pass === 'guest') {
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('dataPage').classList.remove('hidden');
+                renderTable();
+            } else {
+                document.getElementById('errorMsg').classList.remove('hidden');
+            }
+        });
+
+        // Table Rendering
+        function renderTable(filter = "") {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+            const filtered = knowledgeDatabase.rows.filter(row => 
+                Object.values(row).some(val => val.toString().toLowerCase().includes(filter.toLowerCase()))
+            );
+
+            filtered.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold sticky left-0 bg-white border-r">${row["Patient ID"]}</td>
+                    <td class="p-3">${row["Age @ Diag"]}</td>
+                    <td class="p-3">${row["Sex/Gender"]}</td>
+                    <td class="p-3">${row["Ancestry"]}</td>
+                    <td class="p-3">${row["Primary Cancer"]}</td>
+                    <td class="p-3">${row["ICD-O-3"]}</td>
+                    <td class="p-3">${row["Stage/Grade"]}</td>
+                    <td class="p-3 font-semibold text-blue-700">${row["Gene Symbol"]}</td>
+                    <td class="p-3 font-mono">${row["Variant (HGVS)"]}</td>
+                    <td class="p-3">${row["Pathogenicity"]}</td>
+                    <td class="p-3">${row["Treatment Log"]}</td>
+                    <td class="p-3">${row["HPO Mapping"]}</td>
+                    <td class="p-3">${row["Env. Exposure"]}</td>
+                    <td class="p-3">${row["Family History"]}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => renderTable(e.target.value));
+        
+        function exportCSV() {
+            let csv = knowledgeDatabase.headers.join(",") + "\n";
+            knowledgeDatabase.rows.forEach(row => {
+                csv += Object.values(row).join(",") + "\n";
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'CanRISE_Knowledge_Matrix.csv');
+            a.click();
+        }
+    </script>
+
+<script>
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  document.addEventListener('auxclick', e => {
+    if (e.button === 1) e.preventDefault();
+  });
+</script>
+
+
+</body>
+</html>
