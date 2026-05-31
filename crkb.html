@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CanRISE | Knowledge Hub Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 text-white min-h-screen">
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="flex flex-col items-center justify-center min-h-screen p-6">
+    <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+        <img src="logo.png" alt="CanRISE Logo" class="w-32 h-32 mx-auto mb-6 rounded-full border-2 border-blue-500/50">
+        <h2 class="text-2xl font-bold mb-6">CanRISE Knowledge Hub Login</h2>
+
+        <form id="loginForm" class="space-y-4">
+            <input type="text" id="username" placeholder="Username"
+                   class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+
+            <input type="password" id="password" placeholder="Password"
+                   class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+
+            <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition">
+                Access Database
+            </button>
+        </form>
+
+        <p id="errorMsg" class="text-red-400 mt-4 hidden text-sm">Invalid credentials.</p>
+    </div>
+</div>
+
+<!-- DATA PAGE -->
+<div id="dataPage" class="hidden bg-slate-50 text-slate-900 p-4 md:p-8 min-h-screen">
+    <div class="max-w-[95vw] mx-auto">
+
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">CanRISE Knowledgebase (KB)</h1>
+            <p class="text-slate-600 mt-2">Comprehensive Consortium Internal Repository</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+
+            <!-- SEARCH + TOOLS -->
+            <div class="flex flex-col md:flex-row justify-between gap-4 mb-6">
+                <input id="searchInput"
+                       type="text"
+                       placeholder="Search across all CanRISE KB data..."
+                       class="border border-slate-300 rounded-lg px-4 py-2 w-full md:w-1/3 focus:ring-2 focus:ring-blue-500 outline-none">
+
+                <!-- Optional CSV Export -->
+                <!--
+                <button onclick="exportCSV()"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                    Download CSV
+                </button>
+                -->
+            </div>
+
+            <!-- LOADING INDICATOR -->
+            <div id="loading" class="text-center text-slate-500 py-4 hidden">
+                Loading data…
+            </div>
+
+            <!-- TABLE -->
+            <div class="w-full overflow-x-auto shadow-inner rounded-lg border border-slate-200">
+                <table id="dataTable" class="w-full table-auto border-collapse text-sm">
+                    <thead class="sticky top-0 z-10 bg-slate-800 text-white text-xs uppercase tracking-wider">
+                        <tr id="headerRow"></tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+/* ---------------------------------------------------------
+   GLOBAL STATE
+--------------------------------------------------------- */
+let knowledgeDatabase = { headers: [], rows: [] };
+
+/* ---------------------------------------------------------
+   UTILITIES
+--------------------------------------------------------- */
+function cleanValue(v) {
+    return v == null ? "" : String(v).trim();
+}
+
+function getHeaders(rows) {
+    return rows.length ? Object.keys(rows[0]) : [];
+}
+
+/* ---------------------------------------------------------
+   RENDERING
+--------------------------------------------------------- */
+function renderHeaders() {
+    const headerRow = document.getElementById("headerRow");
+    headerRow.innerHTML = knowledgeDatabase.headers
+        .map(h => `<th scope="col" class="p-3 text-left whitespace-nowrap">${h}</th>`)
+        .join("");
+}
+
+function renderTable(filter = "") {
+    const tbody = document.getElementById("tableBody");
+    tbody.innerHTML = "";
+
+    const q = filter.toLowerCase();
+
+    const filtered = knowledgeDatabase.rows.filter(row =>
+        Object.values(row).some(v => cleanValue(v).toLowerCase().includes(q))
+    );
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${knowledgeDatabase.headers.length}"
+                    class="p-4 text-center text-slate-500">
+                    No matching records found.
+                </td>
+            </tr>`;
+        return;
+    }
+
+    filtered.forEach((row, i) => {
+        const tr = document.createElement("tr");
+        tr.className = `odd:bg-white even:bg-slate-50 hover:bg-blue-50 transition`;
+
+        tr.innerHTML = knowledgeDatabase.headers.map(h => `
+            <td class="p-3 whitespace-normal break-words text-left">
+                ${cleanValue(row[h])}
+            </td>
+        `).join("");
+
+        tbody.appendChild(tr);
+    });
+}
+
+/* ---------------------------------------------------------
+   DATA LOADING
+--------------------------------------------------------- */
+async function loadData() {
+    document.getElementById("loading").classList.remove("hidden");
+
+    const res = await fetch("turex3.json", { cache: "no-store" });
+    if (!res.ok) throw new Error("Failed to load JSON: " + res.status);
+
+    const data = await res.json();
+
+    knowledgeDatabase.rows = Array.isArray(data) ? data : [];
+    knowledgeDatabase.headers = getHeaders(knowledgeDatabase.rows);
+
+    renderHeaders();
+    renderTable();
+
+    document.getElementById("loading").classList.add("hidden");
+}
+
+/* ---------------------------------------------------------
+   LOGIN HANDLER
+--------------------------------------------------------- */
+document.getElementById("loginForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+
+    if (user === "guest" && pass === "guest") {
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("dataPage").classList.remove("hidden");
+
+        loadData();
+    } else {
+        document.getElementById("errorMsg").classList.remove("hidden");
+    }
+});
+
+/* ---------------------------------------------------------
+   SEARCH
+--------------------------------------------------------- */
+document.getElementById("searchInput").addEventListener("input", e => {
+    renderTable(e.target.value);
+});
+
+/* ---------------------------------------------------------
+   DISABLE RIGHT/MIDDLE CLICK
+--------------------------------------------------------- */
+document.addEventListener("contextmenu", e => e.preventDefault());
+document.addEventListener("mousedown", e => {
+    if (e.button === 1 || e.button === 2) e.preventDefault();
+});
+</script>
+
+</body>
+</html>
+
